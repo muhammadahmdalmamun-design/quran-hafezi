@@ -1,0 +1,17 @@
+{
+  "name": "আল-কুরআন হাফেজি",
+  "short_name": "কুরআন হাফেজি",
+  "lang": "bn",
+  "id": "./hafezi-pwa.html",
+  "start_url": "./hafezi-pwa.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a2010",
+  "theme_color": "#0a2010",
+  "icons": [
+    { "src": "hafezi-pwa-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "hafezi-pwa-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "hafezi-pwa-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
