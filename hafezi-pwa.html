@@ -56,7 +56,7 @@ addEventListener('unhandledrejection',function(e){var r=e.reason;if(r&&r.__an)re
 window.AlAminNerve={v:2,app:APP,guard:function(m,f){return wrap(m,f)()},wrapAll:wrapAll,where:where,report:report,send:function(m,t){rec(m,t,false)}};
 setTimeout(hello,800);setTimeout(pull,3000);
 }catch(e){}})();</script>
-<title>আল-কুরআন হাফেজি v21</title>
+<title>আল-কুরআন হাফেজি v23</title>
 <meta name="theme-color" content="#0a2010">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -497,9 +497,6 @@ body.zoom-on #bgStars .zst{animation-play-state:paused}
 
 <div class="sb" id="sb">
   <div class="sb-h">📖 সূরা তালিকা (১১৪)<span onclick="toggleSb(false)">✕</span></div>
-  <div class="sb-dl" onclick="alafasyPack('cur')">📦 আল-আফাসী অফলাইন প্যাক — এই সূরা (লেখা + তেলাওয়াত)</div>
-  <div class="sb-dl" onclick="alafasyPack('amma')">📦 আল-আফাসী অফলাইন প্যাক — পারা আম্মা (সূরা ৭৮–১১৪)</div>
-  <div class="sb-dl" onclick="alafasyPack('from')">📦 আল-আফাসী অফলাইন প্যাক — এই সূরা থেকে শেষ পর্যন্ত</div>
   <div class="sb-dl" onclick="offlineCheck()">🔍 এই সূরা ইন্টারনেট ছাড়া চলবে কি না যাচাই করুন</div>
   <div class="sb-dl" id="sbDl" onclick="downloadAll()">📥 সম্পূর্ণ কুরআন অফলাইনের জন্য সংরক্ষণ</div>
   <div class="sb-dl" id="sbAudDl" onclick="downloadAudio('cur')">🎧 এই সূরার ক্বারী-তেলাওয়াত অফলাইনের জন্য নামান</div>
@@ -3246,9 +3243,9 @@ async function downloadAudio(mode) {
     // আরবি লেখা আনা বাধা নয় — না এলেও অডিও নামবে
     if (!s.loaded) { setAudSt('⏳ ' + s.name + ' — লেখা আনা হচ্ছে...'); try { await ensureSura(si); } catch (e) {} }
     const total = AYAH_COUNTS[s.id - 1]; let done = 0, bad = 0;
-    for (let pass = 0; pass < 3 && !audDl.cancel && !stopped; pass++) {
+    for (let pass = 0; pass < 5 && !audDl.cancel && !stopped; pass++) {
       if (pass > 0) { setAudSt('🔁 ' + s.name + ' — বাকি আয়াত আবার চেষ্টা হচ্ছে...'); await dlSleep(5000); }
-      let next = 1; bad = 0;
+      let next = 1; bad = 0; (window.__dlBad = window.__dlBad || {})[s.id] = [];
       const worker = async () => {
         while (!audDl.cancel && !stopped) {
           while (gateUntil > Date.now() && !audDl.cancel) await dlSleep(500 / DLK);
@@ -3260,7 +3257,7 @@ async function downloadAudio(mode) {
           for (let tr = 0; tr < 5 && !ok && !audDl.cancel; tr++) {
             try {
               const r = await dlAyah(s.id, an);
-              if (!(await verifyClip(r.ab, r.segs))) throw new Error('ফাইল সঠিক নয়');
+              if (!(await verifyClip(r.ab, r.segs))) { if (tr >= 1 && await verifyClip(r.ab, null)) r.segs = null; else throw new Error('ফাইল সঠিক নয়'); }
               try {
                 let pm = null; try { pm = await offGet(key + '!m'); } catch (e) {}
                 await offPut(key, { ab: r.ab, segs: r.segs || null, t: Date.now() });
@@ -3276,7 +3273,7 @@ async function downloadAudio(mode) {
           }
           if (ok) { done++; fails = 0; stalls = 0; }
           else if (!audDl.cancel) {
-            bad++; fails++;
+            bad++; fails++; try { window.__dlBad[s.id].push(an); } catch (e) {}
             if (fails >= 6) { fails = 0; stalls++; gateUntil = Date.now() + 20000 * DLK; if (stalls >= 5) { stopped = 'net'; return; } }
           }
           if (ok) setAudSt('⏳ ' + s.name + ' — আয়াত ' + toBn(done) + '/' + toBn(total) + (mode !== 'cur' ? ' · সূরা ' + toBn(s.id) + ' (' + toBn(list.indexOf(si) + 1) + '/' + toBn(list.length) + ')' : ''));
@@ -3295,7 +3292,7 @@ async function downloadAudio(mode) {
   else if (stopped === 'quota') setAudSt('⚠️ ফোনে জায়গা শেষ — কিছু মুছে আবার চাপুন');
   else if (stopped === 'idb') setAudSt('⚠️ ব্রাউজার সংরক্ষণ করতে দিচ্ছে না (' + stopWhy + ') — প্রাইভেট/ইনকগনিটো মোড বন্ধ করে ফাইলটি আবার খুলুন');
   else if (stopped === 'net') setAudSt('⚠️ বারবার ব্যর্থ (' + lastWhy + ') — একটু পরে আবার চাপুন, বাকি অংশ থেকে চলবে');
-  else if (missing) setAudSt('⚠️ ' + toBn(missing) + 'টি আয়াত আসেনি (' + lastWhy + ') — আবার চাপলে শুধু বাকিগুলো আসবে');
+  else if (missing) setAudSt('⚠️ ' + toBn(missing) + 'টি আয়াত আসেনি (' + lastWhy + ') · ' + Object.keys(window.__dlBad || {}).filter(k => window.__dlBad[k].length).map(k => 'সূরা ' + toBn(k) + ' আয়াত ' + window.__dlBad[k].slice(0, 6).map(toBn).join(', ')).join(' · ') + ' — আবার চাপলে শুধু বাকিগুলো আসবে');
   else { setAudSt('✅ সংরক্ষিত — এখন ইন্টারনেট ছাড়াই ক্বারীর কণ্ঠে চার-শব্দের টুকরো শুনতে পারবেন'); showToast('✅ ক্বারীর তেলাওয়াত অফলাইনে সংরক্ষিত'); }
   if (stopped || missing) { try { AlAminNerve.send('downloadAudio', (stopped || 'missing') + ': ' + (stopWhy || lastWhy)); } catch (e) {} }
   if (!stopped && !wasCancel) setTimeout(audStatus, 4000);
@@ -3343,7 +3340,7 @@ async function autoCacheOffline() {
         for (let tr = 0; tr < 2 && !done; tr++) {
           try {
             const r = await dlAyah(s.id, an);
-            if (!(await verifyClip(r.ab, r.segs))) throw new Error('ফাইল সঠিক নয়');
+            if (!(await verifyClip(r.ab, r.segs))) { if (tr >= 1 && await verifyClip(r.ab, null)) r.segs = null; else throw new Error('ফাইল সঠিক নয়'); }
             await offPut(key, { ab: r.ab, segs: r.segs || null, t: Date.now() });
             await offPut(key + '!m', { t: (r.segs || parseReciter(rc).kind !== 'qf') ? 1 : 0, n: ((pm && pm.n) || 0) + 1 });
             done = true;
@@ -3725,6 +3722,154 @@ synth.speak=function(u){
 })();
 </script>
 <script>window.addEventListener("load",function(){try{AlAminNerve.wrapAll()}catch(e){}});</script>
+<script>
+/* v23: দীর্ঘ চাপে সবক/সাতসবক/আমুক্তা · নতুন সবক শিখুন · নতুন সাতসবক · ৩০ পারার আমুক্তা */
+(function () {
+  'use strict';
+  const LS = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
+  const SV = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+  const bn = n => typeof toBn === 'function' ? toBn(n) : String(n);
+  const h = (t, css, html) => { const e = document.createElement(t); if (css) e.style.cssText = css; if (html != null) e.innerHTML = html; return e; };
+  const CARD = 'background:rgba(255,255,255,.05);border:1px solid var(--brd2);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:8px';
+  const TTL = 'font-size:12px;color:var(--gold);font-family:"Noto Serif Bengali",serif';
+  const toast = m => { try { showToast(m); } catch (e) {} };
+  const openZoom = () => { try { if (!zoomActive) { document.getElementById('zoomOverlay').classList.add('open'); zoomActive = true; startZoomFlowers(); } } catch (e) {} };
+
+  /* ---------- ১) নতুন সবক শিখুন: চার শব্দ, তারপর এক এক শব্দ করে জুড়ে ---------- */
+  let shikhNew = !!LS('hafezi_shikh_new', false);
+  const _split = splitIntoChunks;
+  splitIntoChunks = function (t) {
+    const ch = _split(t); if (!shikhNew) return ch;
+    const w = ch.flatMap(c => c.words); if (w.length <= 4) return ch;
+    const out = [{ words: w.slice(0, 4), text: w.slice(0, 4).join(' ') }];
+    for (let i = 4; i < w.length; i++) out.push({ words: [w[i]], text: w[i] });
+    return out;
+  };
+  if (typeof FEATS !== 'undefined') FEATS.splice(1, 0, ['shikh2', 'নতুন ছবক শিখুন']);
+  const _openP = openP;
+  openP = function (n) { if (n === 'shikh2') { setNew(true); toast('✨ নতুন পদ্ধতি চালু: চার শব্দ, তারপর এক এক শব্দ'); _openP('shikh'); } else _openP(n); };
+  let newCk = null;
+  function setNew(v) { shikhNew = !!v; SV('hafezi_shikh_new', shikhNew); if (newCk) newCk.checked = shikhNew; }
+  (function () {
+    const pb = document.querySelector('#pShikh .pbody'); if (!pb) return;
+    const c = h('div', CARD, '<div style="display:flex;align-items:center;gap:8px"><span style="' + TTL + ';flex:1">✨ নতুন পদ্ধতি: চার শব্দের পর এক এক শব্দ জুড়ে শিখুন</span><label class="sw"><input type="checkbox" id="shikhNewCk"><span class="sl"></span></label></div><div class="hint">বন্ধ থাকলে আগের মতোই চার-চার শব্দের টুকরো। চালু থাকলে প্রথমে চার শব্দ, এরপর একটি একটি শব্দ আগেরগুলোর সাথে মিলে আয়াত সম্পূর্ণ হবে।</div>');
+    pb.insertBefore(c, pb.firstChild);
+    newCk = c.querySelector('#shikhNewCk'); newCk.checked = shikhNew; newCk.onchange = () => setNew(newCk.checked);
+  })();
+
+  /* ---------- ২) নতুন সাতসবক ---------- */
+  const sat2 = { run: false, tok: 0 };
+  const S2 = Object.assign({ mode: 'join', joinReps: 1, repN: 3 }, LS('hafezi_sat2', {}));
+  const _stop = stopAllRecitation;
+  stopAllRecitation = function () { sat2.run = false; sat2.tok++; _stop(); };
+  const _any = anyRecitationRunning;
+  anyRecitationRunning = function () { return sat2.run || _any(); };
+  const _stopSat = stopSat;
+  stopSat = function () { sat2.run = false; sat2.tok++; _stopSat(); };
+  function sat2Start(an) {
+    const sura = SURAS[curSuraIdx], list = sura.pages.flatMap(p => p.ayahs), st = list.findIndex(a => a.n === an);
+    if (st < 0) return;
+    stopAllRecitation(); sat2.run = true; const tok = ++sat2.tok;
+    const alive = () => sat2.run && sat2.tok === tok, n = list.length - st, join = S2.mode === 'join', reps = join ? S2.joinReps : S2.repN;
+    let r = 0, q = 0, i = 0;
+    toast('🌙 সাতসবক: ' + sura.name + ' — আয়াত ' + bn(an) + ' থেকে শুরু');
+    openZoom();
+    (function step() {
+      if (!alive()) return;
+      if (r >= n) { sat2.run = false; toast('✅ সাতসবক সম্পন্ন! আলহামদুলিল্লাহ'); if (zoomSett.autoAmukta) setTimeout(() => startAmuktaLoop(), 1200); return; }
+      const arr = join ? list.slice(st, st + r + 1) : [list[st + r]];
+      if (i >= arr.length) { i = 0; if (++q >= reps) { q = 0; r++; } setTimeout(step, 450); return; }
+      const a = arr[i++], nx = arr[i] || list[st + r + 1]; if (nx) try { prefetchAyah(sura.id, nx.n); } catch (e) {}
+      document.getElementById('zoomAyah').textContent = a.ar;
+      document.getElementById('zoomInfo').textContent = sura.name + ' · সাতসবক ' + (join ? 'রাউন্ড ' + bn(r + 1) + '/' + bn(n) + ' (আয়াত ' + bn(arr[0].n) + '–' + bn(arr[arr.length - 1].n) + ')' : 'আয়াত ' + bn(a.n)) + ' · বার ' + bn(q + 1) + '/' + bn(reps);
+      document.getElementById('zoomCounter').textContent = q + 1;
+      const u = new SpeechSynthesisUtterance(a.ar); u._ref = { sid: sura.id, an: a.n };
+      u.lang = 'ar-SA'; u.rate = zoomSett.satRate || 1;
+      u.onend = () => { if (alive()) setTimeout(step, 280); };
+      u.onerror = () => { if (alive()) setTimeout(step, 400); };
+      synth.speak(u);
+    })();
+  }
+  (function () {
+    const pb = document.querySelector('#pSat .pbody'); if (!pb) return;
+    const c = h('div', CARD, '<div style="' + TTL + '">🌙 নতুন সাতসবক — আয়াত চেপে ধরে «সাতসবক» লেখায় ছাড়ুন</div><div style="display:flex;gap:6px"><button class="act" id="s2J" style="flex:1;font-size:11px">মিলিয়ে পড়া</button><button class="act" id="s2R" style="flex:1;font-size:11px">প্রতি আয়াত রিপিট</button></div><div id="s2cJ"></div><div id="s2cR"></div><div class="hint" id="s2H"></div>');
+    pb.insertBefore(c, pb.firstChild);
+    const ctr = (host, label, key) => {
+      const d = h('div', 'display:flex;align-items:center;gap:8px', '<span style="font-size:11px;color:var(--gold2);flex:1">' + label + '</span>');
+      const m = h('button', '', '−'), v = h('span', 'font-size:13px;color:var(--gold);font-weight:700;min-width:24px;text-align:center', ''), p = h('button', '', '+');
+      m.className = p.className = 'zs-btn'; const up = () => { v.textContent = bn(S2[key]); SV('hafezi_sat2', S2); };
+      m.onclick = () => { S2[key] = Math.max(1, S2[key] - 1); up(); }; p.onclick = () => { S2[key] = Math.min(99, S2[key] + 1); up(); };
+      d.append(m, v, p); host.appendChild(d); up();
+    };
+    ctr(c.querySelector('#s2cJ'), 'মিলিয়ে পড়ায় প্রতি রাউন্ড কতবার', 'joinReps');
+    ctr(c.querySelector('#s2cR'), 'রিপিট মোডে প্রতি আয়াত কতবার', 'repN');
+    const sync = () => {
+      c.querySelector('#s2J').classList.toggle('gold', S2.mode === 'join'); c.querySelector('#s2R').classList.toggle('gold', S2.mode === 'rep');
+      c.querySelector('#s2cJ').style.display = S2.mode === 'join' ? '' : 'none'; c.querySelector('#s2cR').style.display = S2.mode === 'rep' ? '' : 'none';
+      c.querySelector('#s2H').textContent = S2.mode === 'join' ? 'মিলিয়ে পড়া: ১ম আয়াত → ১ম+২য় → ১ম+২য়+৩য় → … এভাবে সূরার শেষ পর্যন্ত।' : 'রিপিট: প্রতিটি আয়াত নির্দিষ্ট বার করে পড়ে পরের আয়াত। ক্বারীর পুরো তেলাওয়াত, কোনো টুকরো ছাড়া।';
+      SV('hafezi_sat2', S2);
+    };
+    c.querySelector('#s2J').onclick = () => { S2.mode = 'join'; sync(); }; c.querySelector('#s2R').onclick = () => { S2.mode = 'rep'; sync(); }; sync();
+  })();
+
+  /* ---------- ৩) আমুক্তা: ৩০ পারা ---------- */
+  const JUZ = [[1,1],[2,142],[2,253],[3,93],[4,24],[4,148],[5,82],[6,111],[7,88],[8,41],[9,93],[11,6],[12,53],[15,1],[17,1],[18,75],[21,1],[23,1],[25,21],[27,56],[29,46],[33,31],[36,28],[39,32],[41,47],[46,1],[51,31],[58,1],[67,1],[78,1]];
+  let paras = LS('hafezi_paras', []);
+  function paraSegs(j) {
+    const s1 = JUZ[j - 1][0], a1 = JUZ[j - 1][1]; let s2, a2;
+    if (j < 30) { const ns = JUZ[j][0], na = JUZ[j][1]; if (na > 1) { s2 = ns; a2 = na - 1; } else { s2 = ns - 1; a2 = AYAH_COUNTS[ns - 2]; } } else { s2 = 114; a2 = AYAH_COUNTS[113]; }
+    const out = []; for (let s = s1; s <= s2; s++) out.push({ sid: s, j: j, from: s === s1 ? a1 : 1, to: s === s2 ? a2 : AYAH_COUNTS[s - 1] }); return out;
+  }
+  async function startParaAmukta() {
+    const segs = []; paras.slice().sort((a, b) => a - b).forEach(j => paraSegs(j).forEach(g => segs.push(g)));
+    toast('⏳ পারার আয়াত লোড হচ্ছে...');
+    for (const id of new Set(segs.map(g => g.sid))) { try { await ensureSura(SURAS.findIndex(s => s.id === id)); } catch (e) {} }
+    const vs = [];
+    segs.forEach(g => { const s = SURAS.find(x => x.id === g.sid), ay = s ? s.pages.flatMap(p => p.ayahs).filter(a => a.n >= g.from && a.n <= g.to) : []; if (ay.length) vs.push({ id: s.id, name: s.name + ' · পারা ' + bn(g.j), pages: [{ ayahs: ay }] }); });
+    if (!vs.length) { toast('পারার আয়াত লোড হয়নি — ইন্টারনেট দিয়ে একবার "সম্পূর্ণ কুরআন সংরক্ষণ" করুন'); return; }
+    stopAllRecitation(); amuktaState = { running: true, sIdx: 0, aIdx: 0, suras: vs };
+    toast('🏆 আমুক্তা: পারা ' + paras.slice().sort((a, b) => a - b).map(bn).join(', ')); openZoom(); runAmuktaItem();
+  }
+  const _sal = startAmuktaLoop;
+  startAmuktaLoop = function () { return paras.length ? startParaAmukta() : _sal(); };
+  (function () {
+    const pb = document.querySelector('#pAmukta .pbody'); if (!pb) return;
+    let tmp = paras.slice();
+    const c = h('div', CARD, '<div style="' + TTL + '">📖 কোন কোন পারা শুনবেন? (চেপে বাছুন, তারপর সংরক্ষণ)</div><div id="pgrid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px"></div><div style="display:flex;gap:5px"><button class="act" id="pAll" style="flex:1;font-size:11px">সব</button><button class="act" id="pNone" style="flex:1;font-size:11px">মুছুন</button><button class="act gold" id="pSave" style="flex:2;font-size:11px">💾 সংরক্ষণ করুন</button></div><div class="hint" id="pInfo"></div>');
+    pb.insertBefore(c, pb.firstChild);
+    const grid = c.querySelector('#pgrid'), btn = [];
+    const paint = () => btn.forEach((b, k) => { const on = tmp.includes(k + 1); b.style.background = on ? 'var(--gold)' : 'rgba(255,255,255,.06)'; b.style.color = on ? '#0a2010' : 'var(--gold2)'; });
+    const info = () => { c.querySelector('#pInfo').textContent = paras.length ? 'সংরক্ষিত পারা: ' + paras.slice().sort((a, b) => a - b).map(bn).join(', ') + ' — "আমুক্তা শুরু" চাপলে এগুলোই চলবে।' : 'কোনো পারা সংরক্ষিত নেই — আগের মতো সূরা-ভিত্তিক আমুক্তা চলবে।'; };
+    for (let j = 1; j <= 30; j++) { const b = h('button', 'padding:7px 0;border:1px solid var(--brd2);border-radius:7px;font-size:12px;cursor:pointer', bn(j)); b.onclick = () => { tmp = tmp.includes(j) ? tmp.filter(x => x !== j) : tmp.concat(j); paint(); }; grid.appendChild(b); btn.push(b); }
+    c.querySelector('#pAll').onclick = () => { tmp = btn.map((_, k) => k + 1); paint(); };
+    c.querySelector('#pNone').onclick = () => { tmp = []; paint(); };
+    c.querySelector('#pSave').onclick = () => { paras = tmp.slice(); SV('hafezi_paras', paras); info(); toast(paras.length ? '✅ ' + bn(paras.length) + 'টি পারা সংরক্ষিত' : 'পারা মুছে ফেলা হয়েছে'); };
+    paint(); info();
+  })();
+
+  /* ---------- ৪) আয়াত চেপে ধরলে: সবক → সাতসবক → আমুক্তা ---------- */
+  const LB = ['সবক', 'সাতসবক', 'আমুক্তা'];
+  const hint = h('div', 'position:fixed;left:50%;bottom:22%;transform:translateX(-50%);z-index:99999;display:none;pointer-events:none;background:rgba(10,32,16,.94);border:2px solid var(--gold);color:var(--gold);padding:12px 24px;border-radius:16px;font-size:20px;font-weight:700;font-family:"Noto Serif Bengali",serif;box-shadow:0 6px 24px rgba(0,0,0,.5);white-space:nowrap');
+  document.body.appendChild(hint);
+  let lp = null;
+  const cancel = () => { if (lp) lp.tm.forEach(clearTimeout); lp = null; hint.style.display = 'none'; };
+  document.addEventListener('touchstart', e => {
+    cancel(); if (e.touches.length !== 1) return;
+    const q = e.target.closest && e.target.closest('.ql'); if (!q || q.dataset.ai === undefined) return;
+    const t = e.touches[0]; lp = { x: t.clientX, y: t.clientY, ai: +q.dataset.ai, st: -1, tm: [] };
+    LB.forEach((L, k) => lp.tm.push(setTimeout(() => { if (!lp) return; lp.st = k; hint.textContent = 'ছেড়ে দিন → ' + L; hint.style.display = 'block'; try { navigator.vibrate && navigator.vibrate(25); } catch (x) {} }, 1500 + k * 1000)));
+  }, { passive: true });
+  document.addEventListener('touchmove', e => { if (lp && e.touches[0] && Math.hypot(e.touches[0].clientX - lp.x, e.touches[0].clientY - lp.y) > 40) cancel(); }, { passive: true });
+  document.addEventListener('touchcancel', cancel, { passive: true });
+  document.addEventListener('touchend', () => {
+    if (!lp) return; const st = lp.st, ai = lp.ai; cancel(); if (st < 0) return;
+    try {
+      const a = getCurrentPageData().ayahs[ai]; if (!a) return;
+      if (st === 0) startFromAyah(ai); else if (st === 1) sat2Start(a.n); else startAmuktaLoop();
+    } catch (e) { toast('শুরু করা যায়নি: ' + (e && e.message || '')); }
+  }, { passive: true });
+})();
+</script>
 <script>
 /* অফলাইন: service worker নিবন্ধন (শুধু http/https-এ চলে) */
 (function(){
